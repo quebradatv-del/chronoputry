@@ -1,0 +1,2 @@
+import { beforeEach, describe, expect, it } from "vitest"; import { defaultSettings, loadSettings, saveSettings } from "./settingsService";
+describe("settingsService",()=>{beforeEach(()=>localStorage.clear());it("carrega a configuração inicial",()=>expect(loadSettings()).toEqual(defaultSettings));it("persiste alterações",()=>{saveSettings({...defaultSettings,interval:5.8});expect(loadSettings().interval).toBe(5.8);});});
