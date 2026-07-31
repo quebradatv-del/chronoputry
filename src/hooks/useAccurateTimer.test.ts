@@ -8,6 +8,8 @@ describe("useAccurateTimer", () => {
   let frames: FrameRequestCallback[];
 
   beforeEach(() => {
+    // O deadline é absoluto; cada teste precisa começar no mesmo relógio monotônico.
+    now = 0;
     frames = [];
     vi.spyOn(performance, "now").mockImplementation(() => now);
     vi.stubGlobal("requestAnimationFrame", (callback: FrameRequestCallback) => {
@@ -21,6 +23,12 @@ describe("useAccurateTimer", () => {
     const callback = frames.shift();
     if (!callback) throw new Error("Nenhum frame pendente");
     act(() => callback(now));
+  }
+
+  function startTimer(elapsed = vi.fn()) {
+    const hook = renderHook(() => useAccurateTimer(6, elapsed));
+    act(() => hook.result.current.start());
+    return { ...hook, elapsed };
   }
 
   it("pausa e retoma do tempo restante real", () => {
@@ -62,14 +70,64 @@ describe("useAccurateTimer", () => {
   });
 
   it("faz uma única troca por frame após uma suspensão longa", () => {
-    const elapsed = vi.fn();
-    const { result } = renderHook(() => useAccurateTimer(6, elapsed));
-    act(() => result.current.start());
+    const { elapsed } = startTimer();
     now = 25_000;
     runNextFrame();
     expect(elapsed).toHaveBeenCalledTimes(1);
     expect(elapsed).toHaveBeenCalledWith(4, 0);
     runNextFrame();
     expect(elapsed).toHaveBeenCalledTimes(1);
+  });
+
+  it("recalcula uma suspensão de exatamente três ciclos", () => {
+    const { result, elapsed } = startTimer();
+    now = 18_000;
+    runNextFrame();
+    expect(elapsed).toHaveBeenCalledOnce();
+    expect(elapsed).toHaveBeenCalledWith(3, 3);
+    expect(result.current.cycle).toMatchObject({
+      directionIndex: 3,
+      remaining: 6,
+    });
+  });
+
+  it("recalcula três ciclos e meio sem arredondar para o próximo ciclo", () => {
+    const { result, elapsed } = startTimer();
+    now = 21_000;
+    runNextFrame();
+    expect(elapsed).toHaveBeenCalledOnce();
+    expect(elapsed).toHaveBeenCalledWith(3, 3);
+    expect(result.current.cycle.directionIndex).toBe(3);
+    expect(result.current.cycle.remaining).toBeCloseTo(3);
+  });
+
+  it("conta o ciclo quando a retomada cai exatamente no próximo limite", () => {
+    const { result, elapsed } = startTimer();
+    now = 24_000;
+    runNextFrame();
+    expect(elapsed).toHaveBeenCalledOnce();
+    expect(elapsed).toHaveBeenCalledWith(4, 0);
+    expect(result.current.cycle).toMatchObject({
+      directionIndex: 0,
+      remaining: 6,
+    });
+  });
+
+  it("não troca a direção quando a suspensão dura menos que um ciclo", () => {
+    const { result, elapsed } = startTimer();
+    now = 5_999;
+    runNextFrame();
+    expect(elapsed).not.toHaveBeenCalled();
+    expect(result.current.cycle.directionIndex).toBe(0);
+    expect(result.current.cycle.remaining).toBeCloseTo(0.001);
+  });
+
+  it("não dispara callback duplicado em dois frames consecutivos após retomar", () => {
+    const { elapsed } = startTimer();
+    now = 18_000;
+    runNextFrame();
+    runNextFrame();
+    expect(elapsed).toHaveBeenCalledOnce();
+    expect(elapsed).toHaveBeenCalledWith(3, 3);
   });
 });
