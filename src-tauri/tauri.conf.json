@@ -1,0 +1,43 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "Putrefactory Timer",
+  "version": "0.1.0",
+  "identifier": "com.putrefactory.timer",
+  "build": {
+    "beforeDevCommand": "npm run dev",
+    "devUrl": "http://localhost:1420",
+    "beforeBuildCommand": "npm run build",
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "security": {
+      "csp": "default-src 'self'; media-src 'self' blob:; style-src 'self' 'unsafe-inline'"
+    },
+    "windows": [
+      {
+        "label": "main",
+        "title": "Putrefactory Timer",
+        "width": 390,
+        "height": 500,
+        "minWidth": 280,
+        "minHeight": 250,
+        "decorations": false,
+        "transparent": true,
+        "alwaysOnTop": true,
+        "visible": true,
+        "resizable": true,
+        "center": true,
+        "shadow": false
+      }
+    ]
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "shortDescription": "Timer overlay para Putrefactory",
+    "resources": [
+      "../assets/audio-examples/README.md",
+      "../config/default-settings.json"
+    ]
+  }
+}

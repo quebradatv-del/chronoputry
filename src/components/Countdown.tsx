@@ -1,0 +1,11 @@
+export function Countdown({ remaining }: { remaining: number }) {
+  return (
+    <div className="countdown" aria-label={`${remaining.toFixed(1)} segundos`}>
+      {remaining.toLocaleString("pt-BR", {
+        minimumFractionDigits: 1,
+        maximumFractionDigits: 1,
+      })}{" "}
+      <small>s</small>
+    </div>
+  );
+}

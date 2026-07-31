@@ -1,0 +1,243 @@
+:root {
+  font-family:
+    Inter,
+    Segoe UI,
+    sans-serif;
+  color: #fff;
+  background: transparent;
+  --opacity: 0.92;
+  --scale: 1;
+  color-scheme: dark;
+}
+* {
+  box-sizing: border-box;
+}
+html,
+body,
+#root {
+  margin: 0;
+  min-height: 100%;
+  overflow: hidden;
+}
+button,
+input,
+select {
+  font: inherit;
+}
+.overlay {
+  position: relative;
+  width: 100vw;
+  min-height: 100vh;
+  background: rgba(12, 13, 15, var(--opacity));
+  border: 1px solid #3a3d42;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 8px 28px #0008;
+}
+.titlebar {
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  letter-spacing: 0.18em;
+  font-size: 10px;
+  font-weight: 700;
+  color: #b9bdc5;
+  cursor: move;
+  border-bottom: 1px solid #292c31;
+}
+.status-dot {
+  position: absolute;
+  right: 15px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #8bffbe;
+}
+.content {
+  padding: 10px 14px 14px;
+  text-align: center;
+  transform-origin: top center;
+}
+.direction .arrow {
+  font-size: calc(80px * var(--scale));
+  font-weight: 800;
+  line-height: 0.95;
+  text-shadow: 0 3px 20px #fff2;
+}
+.direction-name {
+  font-size: calc(31px * var(--scale));
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.countdown {
+  font-size: calc(27px * var(--scale));
+  font-variant-numeric: tabular-nums;
+  color: #d9dce1;
+  margin: 4px;
+}
+.countdown small {
+  font-size: 0.55em;
+}
+.next {
+  font-size: calc(13px * var(--scale));
+  color: #b8bdc6;
+}
+.next strong {
+  color: #fff;
+  text-transform: uppercase;
+}
+.state {
+  margin: 7px auto 5px;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  color: #7fffb8;
+}
+.paused .state {
+  color: #ffd27b;
+}
+.paused .arrow {
+  opacity: 0.7;
+}
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 5px;
+}
+.controls button,
+.settings button {
+  border: 1px solid #444952;
+  background: #24272c;
+  color: #fff;
+  border-radius: 7px;
+  padding: 6px 9px;
+  cursor: pointer;
+}
+.controls button:hover,
+.settings button:hover {
+  background: #343840;
+}
+.controls .primary {
+  border-color: #54af81;
+}
+.manual {
+  margin-top: 6px;
+  background: #1e2024;
+  border: 1px solid #444;
+  border-radius: 5px;
+  padding: 3px;
+  color: #ddd;
+}
+.message {
+  font-size: 11px;
+  color: #ffd27b;
+  margin-top: 5px;
+}
+.synced {
+  animation: sync 0.45s ease;
+}
+@keyframes sync {
+  50% {
+    filter: brightness(1.7);
+    transform: scale(0.985);
+  }
+}
+.settings {
+  position: absolute;
+  inset: 0;
+  background: #15171a;
+  z-index: 2;
+  text-align: left;
+}
+.settings header {
+  height: 44px;
+  padding: 8px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid #333;
+}
+.settings h2 {
+  font-size: 16px;
+  margin: 0;
+}
+.settings-scroll {
+  padding: 12px;
+  overflow: auto;
+  height: calc(100vh - 44px);
+  display: grid;
+  gap: 12px;
+}
+.settings label:not(.check) {
+  display: grid;
+  gap: 4px;
+  font-size: 12px;
+}
+.settings input,
+.settings select {
+  width: 100%;
+  padding: 5px;
+  background: #22252a;
+  border: 1px solid #484d56;
+  border-radius: 5px;
+}
+.settings fieldset {
+  border: 1px solid #393d44;
+  border-radius: 7px;
+  display: grid;
+  gap: 6px;
+}
+.audio-row {
+  display: grid;
+  grid-template-columns: 65px auto 1fr auto;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+}
+.audio-row .file {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: #aaa;
+}
+.checks {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+.settings .check {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12px;
+}
+.settings .check input {
+  width: auto;
+}
+.setting-row {
+  grid-template-columns: 1fr 100px !important;
+  align-items: center;
+}
+.hint {
+  font-size: 11px;
+  color: #aeb3bc;
+}
+.compact .titlebar {
+  height: 24px;
+}
+.compact .content {
+  padding: 5px;
+}
+.compact .direction .arrow {
+  font-size: calc(62px * var(--scale));
+}
+.compact .direction-name {
+  font-size: calc(22px * var(--scale));
+}
+.compact .state,
+.compact .manual {
+  display: none;
+}
