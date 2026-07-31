@@ -24,8 +24,6 @@ jobs:
       - uses: Swatinem/rust-cache@v2
         with:
           workspaces: src-tauri
-      # Remover esta etapa quando o lockfile puder ser regenerado em um ambiente com acesso ao npm.
-      - run: npm install --package-lock-only
       - run: npm ci
       - run: npm test
       - run: npm run lint
@@ -51,6 +49,5 @@ jobs:
       - uses: Swatinem/rust-cache@v2
         with:
           workspaces: src-tauri
-      - run: npm install --package-lock-only
       - run: npm ci
       - run: npm run tauri build
