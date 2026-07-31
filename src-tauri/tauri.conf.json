@@ -35,6 +35,9 @@
     "active": true,
     "targets": "all",
     "shortDescription": "Timer overlay para Putrefactory",
+    "icon": [
+      "icons/icon.ico"
+    ],
     "resources": [
       "../assets/audio-examples/README.md",
       "../config/default-settings.json"
