@@ -57,12 +57,10 @@ fn create_windows_icon(path: &Path) -> io::Result<()> {
             let dx = x - center;
             let dy = y - center;
             let distance_squared = dx * dx + dy * dy;
-            let on_ring = distance_squared >= (radius - 2).pow(2)
-                && distance_squared <= radius.pow(2);
+            let on_ring =
+                distance_squared >= (radius - 2).pow(2) && distance_squared <= radius.pow(2);
             let on_vertical_hand = (x - center).abs() <= 1 && y >= 7 && y <= center;
-            let on_diagonal_hand = y - center == (x - center) / 2
-                && x >= center
-                && x <= center + 8;
+            let on_diagonal_hand = y - center == (x - center) / 2 && x >= center && x <= center + 8;
 
             let (red, green, blue, alpha) = if on_diagonal_hand {
                 (255, 120, 80, 255)
