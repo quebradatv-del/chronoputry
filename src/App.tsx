@@ -197,7 +197,8 @@ export default function App() {
 
   const targetDirectionIndex = upcomingImpactIndex(cycle.directionIndex);
   const targetDirection = directions[targetDirectionIndex];
-  const followingDirection = directions[followingImpactIndex(cycle.directionIndex)];
+  const followingDirection =
+    directions[followingImpactIndex(cycle.directionIndex)];
 
   return (
     <Overlay locked={settings.lockPosition} compact={settings.compact}>
