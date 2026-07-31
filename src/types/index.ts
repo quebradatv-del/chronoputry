@@ -7,7 +7,7 @@ export const directions = [
 
 export type DirectionId = (typeof directions)[number]["id"];
 export type TimerStatus = "paused" | "running";
-export type AudioTiming = 0 | 1 | 2;
+export type AudioTiming = number;
 export type HotkeyAction =
   | "toggle"
   | "sync"
