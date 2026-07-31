@@ -124,8 +124,8 @@ export function SettingsPanel({
             onChange={(event) => setAudioTiming(event.target.valueAsNumber)}
           />
           <span className="hint">
-            Use 0 para tocar exatamente na troca. Aceita valores como 1,5 ou
-            2,7 segundos.
+            Use 0 para tocar exatamente na troca. Aceita valores como 1,5 ou 2,7
+            segundos.
           </span>
         </label>
         <fieldset>
