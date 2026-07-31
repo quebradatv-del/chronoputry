@@ -1,4 +1,6 @@
-import type { ReactNode } from "react";
+import { getCurrentWindow } from "@tauri-apps/api/window";
+import type { MouseEvent, ReactNode } from "react";
+
 export function Overlay({
   children,
   locked,
@@ -8,13 +10,20 @@ export function Overlay({
   locked: boolean;
   compact: boolean;
 }) {
+  function startDragging(event: MouseEvent<HTMLElement>) {
+    if (locked || event.button !== 0) return;
+    event.preventDefault();
+    void getCurrentWindow().startDragging();
+  }
+
   return (
     <main className={compact ? "overlay compact" : "overlay"}>
       <header
         className="titlebar"
-        data-tauri-drag-region={locked ? undefined : true}
+        onMouseDown={startDragging}
+        title={locked ? "Posição bloqueada" : "Arraste para mover a janela"}
       >
-        <span data-tauri-drag-region>PUTREFACTORY TIMER</span>
+        <span>PUTREFACTORY TIMER</span>
         <i className="status-dot" aria-hidden="true" />
       </header>
       {children}

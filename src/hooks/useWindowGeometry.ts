@@ -47,8 +47,8 @@ export function isValidGeometry(
 export function useWindowGeometry(onError: (message: string) => void) {
   useEffect(() => {
     const appWindow = getCurrentWindow();
-    let cleanupMove = () => undefined;
-    let cleanupResize = () => undefined;
+    let cleanupMove: () => void = () => {};
+    let cleanupResize: () => void = () => {};
     let saveTimeout: number | undefined;
 
     async function restore() {

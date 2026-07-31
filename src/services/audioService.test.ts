@@ -9,15 +9,19 @@ describe("audioService", () => {
   const speak = vi.fn();
 
   beforeEach(() => {
+    speak.mockReset();
     vi.mocked(invoke).mockReset();
     Object.defineProperty(window, "speechSynthesis", {
       configurable: true,
-      value: { cancel: vi.fn(), speak },
+      value: { cancel: vi.fn(), getVoices: () => [], speak },
     });
     vi.stubGlobal(
       "SpeechSynthesisUtterance",
       class {
         lang = "";
+        pitch = 1;
+        rate = 1;
+        voice: SpeechSynthesisVoice | null = null;
         volume = 1;
         constructor(public text: string) {}
       },
@@ -31,9 +35,13 @@ describe("audioService", () => {
     expect(speak).toHaveBeenCalledTimes(1);
   });
 
-  it("fala uma única vez quando não há arquivo personalizado", async () => {
-    await playCue("north", "Norte", "", 0.8);
+  it("fala um aviso curto quando não há arquivo personalizado", async () => {
+    await playCue("left", "Esquerda", "", 0.6);
+    const utterance = speak.mock.calls[0]?.[0] as SpeechSynthesisUtterance;
+
     expect(speak).toHaveBeenCalledTimes(1);
+    expect(utterance.text).toBe("Cuidado, esquerda");
+    expect(utterance.rate).toBeCloseTo(1.08);
     expect(invoke).not.toHaveBeenCalled();
   });
 });

@@ -1,14 +1,17 @@
 import { directions, type Settings } from "../types";
 
-export const SETTINGS_KEY = "putrefactory-timer.settings.v2";
-const LEGACY_SETTINGS_KEY = "putrefactory-timer.settings.v1";
+export const SETTINGS_KEY = "putrefactory-timer.settings.v3";
+const LEGACY_SETTINGS_KEYS = [
+  "putrefactory-timer.settings.v2",
+  "putrefactory-timer.settings.v1",
+] as const;
 
 export const defaultSettings: Settings = {
-  interval: 6,
-  volume: 0.8,
+  interval: 8,
+  volume: 0.6,
   opacity: 0.92,
   scale: 1,
-  audioTiming: 0,
+  audioTiming: 2,
   audioFiles: { north: "", right: "", south: "", left: "" },
   hotkeys: {
     toggle: "F6",
@@ -103,14 +106,29 @@ export function validateSettings(value: unknown): Settings {
   };
 }
 
+function migrateLegacySettings(settings: Settings): Settings {
+  return {
+    ...settings,
+    interval: settings.interval === 6 ? 8 : settings.interval,
+    volume: settings.volume === 0.8 ? 0.6 : settings.volume,
+    audioTiming: settings.audioTiming === 0 ? 2 : settings.audioTiming,
+  };
+}
+
 export function loadSettings(): Settings {
   try {
-    const stored =
-      localStorage.getItem(SETTINGS_KEY) ??
-      localStorage.getItem(LEGACY_SETTINGS_KEY);
-    return stored
-      ? validateSettings(JSON.parse(stored))
-      : { ...defaultSettings };
+    const current = localStorage.getItem(SETTINGS_KEY);
+    if (current) return validateSettings(JSON.parse(current));
+
+    for (const legacyKey of LEGACY_SETTINGS_KEYS) {
+      const stored = localStorage.getItem(legacyKey);
+      if (stored) {
+        const parsed = validateSettings(JSON.parse(stored));
+        return migrateLegacySettings(parsed);
+      }
+    }
+
+    return { ...defaultSettings };
   } catch {
     return { ...defaultSettings };
   }
@@ -121,5 +139,7 @@ export function saveSettings(settings: Settings) {
     SETTINGS_KEY,
     JSON.stringify({ ...settings, clickThrough: false }),
   );
-  localStorage.removeItem(LEGACY_SETTINGS_KEY);
+  for (const legacyKey of LEGACY_SETTINGS_KEYS) {
+    localStorage.removeItem(legacyKey);
+  }
 }

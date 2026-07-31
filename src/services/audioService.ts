@@ -36,15 +36,29 @@ export async function playCustomAudio(
   await audio.play();
 }
 
+function preferredPortugueseVoice() {
+  const voices = speechSynthesis.getVoices();
+  return (
+    voices.find(({ lang }) => lang.toLowerCase() === "pt-br") ??
+    voices.find(({ lang }) => lang.toLowerCase().startsWith("pt"))
+  );
+}
+
 export function speakDirection(label: string, volume: number) {
   if (!("speechSynthesis" in window)) {
     throw new Error("A síntese de voz do sistema não está disponível.");
   }
 
   speechSynthesis.cancel();
-  const utterance = new SpeechSynthesisUtterance(label);
-  utterance.lang = "pt-BR";
+  const utterance = new SpeechSynthesisUtterance(
+    `Cuidado, ${label.toLowerCase()}`,
+  );
+  const voice = preferredPortugueseVoice();
+  utterance.lang = voice?.lang ?? "pt-BR";
+  utterance.voice = voice ?? null;
   utterance.volume = volume;
+  utterance.rate = 1.08;
+  utterance.pitch = 0.95;
   speechSynthesis.speak(utterance);
 }
 
