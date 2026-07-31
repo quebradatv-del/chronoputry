@@ -210,18 +210,16 @@ export default function App() {
         <div className="state" aria-live="polite">
           {cycle.status === "paused" ? "PAUSADO" : "EM EXECUÇÃO"}
         </div>
-        {!settings.compact && (
-          <Controls
-            running={cycle.status === "running"}
-            onToggle={toggleTimer}
-            onSync={synchronize}
-            onPrevious={() => navigate(-1)}
-            onNext={() => navigate(1)}
-            onReset={() => reset()}
-            onAdjust={adjust}
-            onSettings={() => setSettingsOpen(true)}
-          />
-        )}
+        <Controls
+          running={cycle.status === "running"}
+          onToggle={toggleTimer}
+          onSync={synchronize}
+          onPrevious={() => navigate(-1)}
+          onNext={() => navigate(1)}
+          onReset={() => reset()}
+          onAdjust={adjust}
+          onSettings={() => setSettingsOpen(true)}
+        />
         <select
           className="manual"
           aria-label="Direção atual"
