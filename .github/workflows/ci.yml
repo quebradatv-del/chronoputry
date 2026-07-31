@@ -4,6 +4,11 @@ on:
   pull_request:
   push:
     branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   quality:
@@ -51,3 +56,13 @@ jobs:
           workspaces: src-tauri
       - run: npm ci
       - run: npm run tauri build
+      - name: Upload Windows executable and installers
+        uses: actions/upload-artifact@v4
+        with:
+          name: putrefactory-timer-windows
+          path: |
+            src-tauri/target/release/putrefactory-timer.exe
+            src-tauri/target/release/bundle/msi/*.msi
+            src-tauri/target/release/bundle/nsis/*.exe
+          if-no-files-found: error
+          retention-days: 14
