@@ -58,7 +58,7 @@ export function SettingsPanel({
             onChange={(event) =>
               set(
                 "interval",
-                Math.min(30, Math.max(1, event.target.valueAsNumber || 6)),
+                Math.min(30, Math.max(1, event.target.valueAsNumber || 8)),
               )
             }
           />
@@ -142,8 +142,9 @@ export function SettingsPanel({
           onChange={(value) => set("hotkeys", value)}
         />
         <p className="hint">
-          Com “ignorar cliques”, use F10 para recuperar a interação. Use F11
-          para ocultar ou reabrir o overlay.
+          Arraste a barra superior para mover a janela. Com “ignorar cliques”,
+          use F10 para recuperar a interação. Use F11 para ocultar ou reabrir o
+          overlay.
         </p>
       </div>
     </div>

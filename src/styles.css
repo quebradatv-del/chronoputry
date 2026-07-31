@@ -44,6 +44,7 @@ select {
   font-weight: 700;
   color: #b9bdc5;
   cursor: move;
+  user-select: none;
   border-bottom: 1px solid #292c31;
 }
 .status-dot {

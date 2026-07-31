@@ -11,10 +11,29 @@ import {
 describe("settingsService", () => {
   beforeEach(() => localStorage.clear());
 
-  it("inicia com estado seguro", () => {
+  it("inicia com ciclo de oito segundos e aviso dois segundos antes", () => {
     expect(loadSettings()).toMatchObject({
-      interval: 6,
+      interval: 8,
+      audioTiming: 2,
       clickThrough: false,
+    });
+  });
+
+  it("migra o padrão anterior para o novo ritmo e áudio", () => {
+    localStorage.setItem(
+      "putrefactory-timer.settings.v2",
+      JSON.stringify({
+        ...defaultSettings,
+        interval: 6,
+        volume: 0.8,
+        audioTiming: 0,
+      }),
+    );
+
+    expect(loadSettings()).toMatchObject({
+      interval: 8,
+      volume: 0.6,
+      audioTiming: 2,
     });
   });
 
@@ -40,7 +59,7 @@ describe("settingsService", () => {
     expect(
       validateSettings({ interval: "rápido", audioFiles: { north: 12 } }),
     ).toMatchObject({
-      interval: 6,
+      interval: 8,
       audioFiles: defaultSettings.audioFiles,
     });
   });
