@@ -1,20 +1,255 @@
-import { useCallback, useEffect, useState } from "react";
-import { getCurrentWindow, LogicalPosition, LogicalSize } from "@tauri-apps/api/window";
-import { Countdown } from "./components/Countdown"; import { Controls } from "./components/Controls"; import { DirectionDisplay } from "./components/DirectionDisplay"; import { Overlay } from "./components/Overlay"; import { SettingsPanel } from "./components/SettingsPanel";
-import { useAccurateTimer } from "./hooks/useAccurateTimer"; import { useAudioCue } from "./hooks/useAudioCue"; import { useSettings } from "./hooks/useSettings"; import { registerHotkeys } from "./services/hotkeyService"; import { directions } from "./types";
+import { invoke } from "@tauri-apps/api/core";
+import { getCurrentWindow } from "@tauri-apps/api/window";
+import { useCallback, useEffect, useRef, useState } from "react";
 
-export default function App(){
- const {settings,setSettings}=useSettings(); const [settingsOpen,setSettingsOpen]=useState(false); const [message,setMessage]=useState(""); const [syncFlash,setSyncFlash]=useState(false); const {play,audioError}=useAudioCue(settings);
- const elapsed=useCallback(()=>setTimer(c=>{const next=(c.directionIndex+1)%directions.length;if(settings.audioTiming===0)void play(next);return{...c,directionIndex:next,audioPlayed:settings.audioTiming===0};}),[play,settings.audioTiming]);
- const {cycle,setCycle:setTimer,start,pause,reset,adjust,markAudioPlayed}=useAccurateTimer(settings.interval,elapsed);
- const direction=(delta:number)=>{const next=(cycle.directionIndex+delta+directions.length)%directions.length;reset(next);};
- const sync=useCallback(()=>{reset();setSyncFlash(true);setMessage("Sincronizado");window.setTimeout(()=>setSyncFlash(false),450);},[reset]);
- const toggle=useCallback(()=>cycle.status==="running"?pause():start(),[cycle.status,pause,start]);
- useEffect(()=>{if(cycle.status==="running"&&!cycle.audioPlayed&&settings.audioTiming>0&&cycle.remaining<=settings.audioTiming){void play((cycle.directionIndex+1)%directions.length);markAudioPlayed();}},[cycle,markAudioPlayed,play,settings.audioTiming]);
- useEffect(()=>{const win=getCurrentWindow();void win.setAlwaysOnTop(settings.alwaysOnTop);void win.setIgnoreCursorEvents(settings.clickThrough);},[settings.alwaysOnTop,settings.clickThrough]);
- useEffect(()=>{document.documentElement.style.setProperty("--opacity",String(settings.opacity));document.documentElement.style.setProperty("--scale",String(settings.scale));},[settings.opacity,settings.scale]);
- useEffect(()=>{const win=getCurrentWindow();const saved=localStorage.getItem("putrefactory-timer.window.v1");if(saved){try{const g=JSON.parse(saved) as {x:number;y:number;width:number;height:number};void win.setPosition(new LogicalPosition(g.x,g.y));void win.setSize(new LogicalSize(g.width,g.height));}catch{/* configuração antiga inválida */}}let offMove=()=>{};let offResize=()=>{};Promise.all([win.onMoved(async({payload})=>{const s=await win.innerSize();localStorage.setItem("putrefactory-timer.window.v1",JSON.stringify({x:payload.x,y:payload.y,width:s.width,height:s.height}));}),win.onResized(async({payload})=>{const p=await win.outerPosition();localStorage.setItem("putrefactory-timer.window.v1",JSON.stringify({x:p.x,y:p.y,width:payload.width,height:payload.height}));})]).then(([a,b])=>{offMove=a;offResize=b;});return()=>{offMove();offResize();};},[]);
- useEffect(()=>{let dispose=()=>{};const handlers={toggle,sync,next:()=>direction(1),previous:()=>direction(-1),clickThrough:()=>setSettings(s=>({...s,clickThrough:!s.clickThrough})),visibility:()=>{const win=getCurrentWindow();void win.isVisible().then(v=>win.setVisible(!v));}};registerHotkeys(settings.hotkeys,handlers).then(fn=>{dispose=()=>{void fn();};setMessage("");}).catch(e=>setMessage(e instanceof Error?e.message:"Falha ao registrar atalhos."));return()=>dispose();},[settings.hotkeys,toggle,sync]);
- const current=directions[cycle.directionIndex],next=directions[(cycle.directionIndex+1)%directions.length];
- return <Overlay locked={settings.lockPosition} compact={settings.compact}><div className={`${cycle.status} content ${syncFlash?"synced":""}`}><DirectionDisplay index={cycle.directionIndex} showLabel={settings.showDirection}/>{settings.showCountdown&&<Countdown remaining={cycle.remaining}/>} {settings.showNext&&<div className="next">Próxima: <strong>{next.label}</strong> {next.arrow}</div>}<div className="state" aria-live="polite">{cycle.status==="paused"?"PAUSADO":"EM EXECUÇÃO"}</div>{!settings.compact&&<Controls running={cycle.status==="running"} onToggle={toggle} onSync={sync} onPrevious={()=>direction(-1)} onNext={()=>direction(1)} onReset={()=>reset()} onAdjust={adjust} onSettings={()=>setSettingsOpen(true)}/>}<select className="manual" aria-label="Direção atual" value={current.id} onChange={e=>reset(directions.findIndex(d=>d.id===e.target.value))}>{directions.map(d=><option key={d.id} value={d.id}>{d.label}</option>)}</select>{(message||audioError)&&<div className="message" role="status">{audioError||message}</div>}</div>{settingsOpen&&<SettingsPanel settings={settings} onChange={setSettings} onClose={()=>setSettingsOpen(false)}/>}</Overlay>;
+import { Controls } from "./components/Controls";
+import { Countdown } from "./components/Countdown";
+import { DirectionDisplay } from "./components/DirectionDisplay";
+import { Overlay } from "./components/Overlay";
+import { SettingsPanel } from "./components/SettingsPanel";
+import { useAccurateTimer } from "./hooks/useAccurateTimer";
+import { useAudioCue } from "./hooks/useAudioCue";
+import { useSettings } from "./hooks/useSettings";
+import { useWindowGeometry } from "./hooks/useWindowGeometry";
+import { moveDirection } from "./services/directionService";
+import { registerHotkeys } from "./services/hotkeyService";
+import { shouldPlayPreCue } from "./services/timerState";
+import { directions, type FrontendHotkeyAction } from "./types";
+
+type FrontendHandlers = Record<FrontendHotkeyAction, () => void>;
+
+export default function App() {
+  const { settings, setSettings } = useSettings();
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [message, setMessage] = useState("");
+  const [syncFlash, setSyncFlash] = useState(false);
+  const handlersRef = useRef<FrontendHandlers | null>(null);
+  const hotkeyQueueRef = useRef<Promise<void>>(Promise.resolve());
+  const { play, audioMessage } = useAudioCue(settings);
+
+  const handleElapsed = useCallback(
+    (_elapsedCycles: number, nextDirectionIndex: number) => {
+      // Após suspensão, só o estágio atual é anunciado uma vez; não há rajada de áudios.
+      if (settings.audioTiming === 0) void play(nextDirectionIndex);
+    },
+    [play, settings.audioTiming],
+  );
+
+  const {
+    cycle,
+    start,
+    pause,
+    reset,
+    adjust,
+    changeDirection,
+    markAudioPlayed,
+  } = useAccurateTimer(settings.interval, handleElapsed);
+
+  const showTemporaryMessage = useCallback((text: string) => {
+    setMessage(text);
+    globalThis.setTimeout(
+      () => setMessage((current) => (current === text ? "" : current)),
+      1_800,
+    );
+  }, []);
+
+  const handleNativeError = useCallback((text: string) => setMessage(text), []);
+  useWindowGeometry(handleNativeError);
+
+  const navigate = useCallback(
+    (delta: number) => {
+      changeDirection((currentIndex) => moveDirection(currentIndex, delta));
+    },
+    [changeDirection],
+  );
+
+  const synchronize = useCallback(() => {
+    reset();
+    setSyncFlash(true);
+    showTemporaryMessage("Sincronizado");
+    globalThis.setTimeout(() => setSyncFlash(false), 450);
+  }, [reset, showTemporaryMessage]);
+
+  const toggleTimer = useCallback(() => {
+    if (cycle.status === "running") pause();
+    else start();
+  }, [cycle.status, pause, start]);
+
+  const toggleClickThrough = useCallback(() => {
+    setSettings((current) => {
+      const clickThrough = !current.clickThrough;
+      showTemporaryMessage(
+        clickThrough
+          ? "Ignorar cliques ativado — F10 para sair"
+          : "Cliques reativados",
+      );
+      return { ...current, clickThrough };
+    });
+  }, [setSettings, showTemporaryMessage]);
+
+  handlersRef.current = {
+    toggle: toggleTimer,
+    sync: synchronize,
+    next: () => navigate(1),
+    previous: () => navigate(-1),
+    clickThrough: toggleClickThrough,
+  };
+
+  useEffect(() => {
+    if (shouldPlayPreCue(cycle, settings.audioTiming)) {
+      void play(moveDirection(cycle.directionIndex, 1));
+      markAudioPlayed();
+    }
+  }, [cycle, markAudioPlayed, play, settings.audioTiming]);
+
+  useEffect(() => {
+    const appWindow = getCurrentWindow();
+    appWindow.setAlwaysOnTop(settings.alwaysOnTop).catch((error) => {
+      console.error("Falha ao alterar sempre no topo.", error);
+      setMessage("Não foi possível alterar a opção Sempre no topo.");
+    });
+  }, [settings.alwaysOnTop]);
+
+  useEffect(() => {
+    const appWindow = getCurrentWindow();
+    appWindow.setIgnoreCursorEvents(settings.clickThrough).catch((error) => {
+      console.error("Falha ao alterar passagem de cliques.", error);
+      setSettings((current) => ({ ...current, clickThrough: false }));
+      setMessage("Não foi possível ativar Ignorar cliques.");
+    });
+  }, [settings.clickThrough, setSettings]);
+
+  useEffect(() => {
+    document.documentElement.style.setProperty(
+      "--opacity",
+      String(settings.opacity),
+    );
+    document.documentElement.style.setProperty(
+      "--scale",
+      String(settings.scale),
+    );
+  }, [settings.opacity, settings.scale]);
+
+  useEffect(() => {
+    let disposed = false;
+    let unregister: (() => Promise<void>) | null = null;
+    const handlers = Object.fromEntries(
+      (["toggle", "sync", "next", "previous", "clickThrough"] as const).map(
+        (action) => [action, () => handlersRef.current?.[action]()],
+      ),
+    ) as FrontendHandlers;
+
+    async function setupHotkeys() {
+      try {
+        unregister = await registerHotkeys(settings.hotkeys, handlers);
+        if (disposed) {
+          await unregister();
+          unregister = null;
+          return;
+        }
+        await invoke("set_visibility_shortcut", {
+          shortcut: settings.hotkeys.visibility,
+        });
+        if (!disposed) setMessage("");
+      } catch (error) {
+        await invoke("set_visibility_shortcut", {
+          shortcut: settings.hotkeys.visibility,
+        }).catch((visibilityError) =>
+          console.error(
+            "Falha ao restaurar o atalho nativo de visibilidade.",
+            visibilityError,
+          ),
+        );
+        if (!disposed) {
+          setMessage(
+            error instanceof Error
+              ? error.message
+              : "Falha ao registrar atalhos globais.",
+          );
+        }
+      }
+    }
+
+    hotkeyQueueRef.current = hotkeyQueueRef.current
+      .catch((error) =>
+        console.error("Falha na fila de atalhos globais.", error),
+      )
+      .then(setupHotkeys);
+    return () => {
+      disposed = true;
+      hotkeyQueueRef.current = hotkeyQueueRef.current
+        .catch((error) =>
+          console.error("Falha na fila de atalhos globais.", error),
+        )
+        .then(async () => {
+          if (unregister) await unregister();
+        })
+        .catch((error) =>
+          console.error("Falha ao remover atalhos globais.", error),
+        );
+    };
+  }, [settings.hotkeys]);
+
+  const currentDirection = directions[cycle.directionIndex];
+  const nextDirection = directions[moveDirection(cycle.directionIndex, 1)];
+
+  return (
+    <Overlay locked={settings.lockPosition} compact={settings.compact}>
+      <div className={`${cycle.status} content ${syncFlash ? "synced" : ""}`}>
+        <DirectionDisplay
+          index={cycle.directionIndex}
+          showLabel={settings.showDirection}
+        />
+        {settings.showCountdown && <Countdown remaining={cycle.remaining} />}
+        {settings.showNext && (
+          <div className="next">
+            Próxima: <strong>{nextDirection.label}</strong>{" "}
+            {nextDirection.arrow}
+          </div>
+        )}
+        <div className="state" aria-live="polite">
+          {cycle.status === "paused" ? "PAUSADO" : "EM EXECUÇÃO"}
+        </div>
+        {!settings.compact && (
+          <Controls
+            running={cycle.status === "running"}
+            onToggle={toggleTimer}
+            onSync={synchronize}
+            onPrevious={() => navigate(-1)}
+            onNext={() => navigate(1)}
+            onReset={() => reset()}
+            onAdjust={adjust}
+            onSettings={() => setSettingsOpen(true)}
+          />
+        )}
+        <select
+          className="manual"
+          aria-label="Direção atual"
+          value={currentDirection.id}
+          onChange={(event) =>
+            reset(directions.findIndex(({ id }) => id === event.target.value))
+          }
+        >
+          {directions.map((direction) => (
+            <option key={direction.id} value={direction.id}>
+              {direction.label}
+            </option>
+          ))}
+        </select>
+        {(message || audioMessage) && (
+          <div className="message" role="status">
+            {audioMessage || message}
+          </div>
+        )}
+      </div>
+      {settingsOpen && (
+        <SettingsPanel
+          settings={settings}
+          onChange={setSettings}
+          onError={setMessage}
+          onClose={() => setSettingsOpen(false)}
+        />
+      )}
+    </Overlay>
+  );
 }

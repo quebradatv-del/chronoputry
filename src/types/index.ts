@@ -8,17 +8,46 @@ export const directions = [
 export type DirectionId = (typeof directions)[number]["id"];
 export type TimerStatus = "paused" | "running";
 export type AudioTiming = 0 | 1 | 2;
-export type HotkeyAction = "toggle" | "sync" | "next" | "previous" | "clickThrough" | "visibility";
+export type HotkeyAction =
+  | "toggle"
+  | "sync"
+  | "next"
+  | "previous"
+  | "clickThrough"
+  | "visibility";
+export type FrontendHotkeyAction = Exclude<HotkeyAction, "visibility">;
 export type Hotkeys = Record<HotkeyAction, string>;
 
 export interface Settings {
-  interval: number; volume: number; opacity: number; scale: number; audioTiming: AudioTiming;
-  audioFiles: Record<DirectionId, string>; hotkeys: Hotkeys; soundEnabled: boolean;
-  showDirection: boolean; showCountdown: boolean; showNext: boolean; compact: boolean;
-  lockPosition: boolean; alwaysOnTop: boolean; clickThrough: boolean;
+  interval: number;
+  volume: number;
+  opacity: number;
+  scale: number;
+  audioTiming: AudioTiming;
+  audioFiles: Record<DirectionId, string>;
+  hotkeys: Hotkeys;
+  soundEnabled: boolean;
+  showDirection: boolean;
+  showCountdown: boolean;
+  showNext: boolean;
+  compact: boolean;
+  lockPosition: boolean;
+  alwaysOnTop: boolean;
+  clickThrough: boolean;
 }
 
 export interface CycleState {
-  status: TimerStatus; directionIndex: number; startedAt: number; duration: number;
-  remaining: number; audioPlayed: boolean;
+  status: TimerStatus;
+  directionIndex: number;
+  startedAt: number;
+  duration: number;
+  remaining: number;
+  audioPlayed: boolean;
+}
+
+export interface WindowGeometry {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
 }

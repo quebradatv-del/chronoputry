@@ -1,2 +1,23 @@
 import type { ReactNode } from "react";
-export function Overlay({children,locked,compact}:{children:ReactNode;locked:boolean;compact:boolean}){return <main className={compact?"overlay compact":"overlay"}><header className="titlebar" data-tauri-drag-region={locked?undefined:true}><span data-tauri-drag-region>PUTREFACTORY TIMER</span><i className="status-dot" aria-hidden="true"/></header>{children}</main>}
+export function Overlay({
+  children,
+  locked,
+  compact,
+}: {
+  children: ReactNode;
+  locked: boolean;
+  compact: boolean;
+}) {
+  return (
+    <main className={compact ? "overlay compact" : "overlay"}>
+      <header
+        className="titlebar"
+        data-tauri-drag-region={locked ? undefined : true}
+      >
+        <span data-tauri-drag-region>PUTREFACTORY TIMER</span>
+        <i className="status-dot" aria-hidden="true" />
+      </header>
+      {children}
+    </main>
+  );
+}

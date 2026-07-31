@@ -1,3 +1,7 @@
 # Áudios personalizados
 
-Coloque aqui, se desejar, gravações chamadas `norte.wav`, `direita.wav`, `sul.wav` e `esquerda.wav`. Os arquivos não são obrigatórios: selecione WAV, MP3 ou OGG no painel de configurações. Sem arquivo selecionado, o aplicativo usa a síntese de voz disponível no Windows.
+Use o painel de configurações para importar `norte.wav`, `direita.wav`, `sul.wav` e
+`esquerda.wav` (WAV, MP3 ou OGG, até 20 MB). O aplicativo valida e copia cada arquivo para sua pasta
+privada; não é necessário copiar os arquivos manualmente para este diretório.
+
+Sem arquivo selecionado, ou se a reprodução falhar, o aplicativo usa a síntese de voz do Windows.

@@ -1,1 +1,15 @@
-{"interval":6,"volume":0.8,"opacity":0.92,"scale":1,"audioTiming":0,"hotkeys":{"toggle":"F6","sync":"F7","next":"F8","previous":"F9","clickThrough":"F10","visibility":"F11"}}
+{
+  "interval": 6,
+  "volume": 0.8,
+  "opacity": 0.92,
+  "scale": 1,
+  "audioTiming": 0,
+  "hotkeys": {
+    "toggle": "F6",
+    "sync": "F7",
+    "next": "F8",
+    "previous": "F9",
+    "clickThrough": "F10",
+    "visibility": "F11"
+  }
+}

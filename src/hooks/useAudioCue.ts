@@ -1,2 +1,34 @@
-import { useCallback, useState } from "react"; import type { Settings } from "../types"; import { directions } from "../types"; import { playCue } from "../services/audioService";
-export function useAudioCue(settings:Settings){const [audioError,setAudioError]=useState("");const play=useCallback(async(index:number)=>{if(!settings.soundEnabled)return;const d=directions[index];try{setAudioError("");await playCue(d.id,d.label,settings.audioFiles[d.id],settings.volume);}catch(e){setAudioError(e instanceof Error?e.message:"Falha ao reproduzir o áudio.");}},[settings]);return{play,audioError};}
+import { useCallback, useState } from "react";
+
+import { playCue } from "../services/audioService";
+import { directions, type Settings } from "../types";
+
+export function useAudioCue(settings: Settings) {
+  const [audioMessage, setAudioMessage] = useState("");
+
+  const play = useCallback(
+    async (index: number) => {
+      if (!settings.soundEnabled) return;
+
+      const direction = directions[index];
+      try {
+        const result = await playCue(
+          direction.id,
+          direction.label,
+          settings.audioFiles[direction.id],
+          settings.volume,
+        );
+        setAudioMessage(result.warning ?? "");
+      } catch (error) {
+        setAudioMessage(
+          error instanceof Error
+            ? error.message
+            : "Não foi possível reproduzir o aviso sonoro.",
+        );
+      }
+    },
+    [settings.audioFiles, settings.soundEnabled, settings.volume],
+  );
+
+  return { play, audioMessage };
+}
