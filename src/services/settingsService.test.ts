@@ -19,6 +19,20 @@ describe("settingsService", () => {
     });
   });
 
+  it("aceita aviso decimal e limita o valor ao intervalo", () => {
+    expect(validateSettings({ interval: 8, audioTiming: 2.7 })).toMatchObject({
+      interval: 8,
+      audioTiming: 2.7,
+    });
+    expect(validateSettings({ interval: 3, audioTiming: 9 })).toMatchObject({
+      interval: 3,
+      audioTiming: 3,
+    });
+    expect(validateSettings({ interval: 8, audioTiming: -1 })).toMatchObject({
+      audioTiming: 0,
+    });
+  });
+
   it("migra o padrão anterior para o novo ritmo e áudio", () => {
     localStorage.setItem(
       "putrefactory-timer.settings.v2",

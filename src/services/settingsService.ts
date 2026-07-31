@@ -49,16 +49,25 @@ export function validateSettings(value: unknown): Settings {
     Settings["audioFiles"]
   >;
   const inputHotkeys = (input.hotkeys ?? {}) as Partial<Settings["hotkeys"]>;
+  const interval = finiteNumber(
+    input.interval,
+    defaultSettings.interval,
+    1,
+    30,
+  );
 
   return {
     ...defaultSettings,
-    interval: finiteNumber(input.interval, defaultSettings.interval, 1, 30),
+    interval,
     volume: finiteNumber(input.volume, defaultSettings.volume, 0, 1),
     opacity: finiteNumber(input.opacity, defaultSettings.opacity, 0.3, 1),
     scale: finiteNumber(input.scale, defaultSettings.scale, 0.75, 1.75),
-    audioTiming: [0, 1, 2].includes(input.audioTiming ?? -1)
-      ? (input.audioTiming as 0 | 1 | 2)
-      : defaultSettings.audioTiming,
+    audioTiming: finiteNumber(
+      input.audioTiming,
+      defaultSettings.audioTiming,
+      0,
+      interval,
+    ),
     audioFiles: Object.fromEntries(
       directions.map(({ id }) => [
         id,

@@ -21,6 +21,28 @@ export function SettingsPanel({
     onChange((current) => ({ ...current, [key]: value }));
   }
 
+  function setInterval(value: number) {
+    const interval = Math.min(
+      30,
+      Math.max(1, Number.isFinite(value) ? value : 8),
+    );
+    onChange((current) => ({
+      ...current,
+      interval,
+      audioTiming: Math.min(current.audioTiming, interval),
+    }));
+  }
+
+  function setAudioTiming(value: number) {
+    set(
+      "audioTiming",
+      Math.min(
+        settings.interval,
+        Math.max(0, Number.isFinite(value) ? value : 0),
+      ),
+    );
+  }
+
   function checkbox(key: keyof Settings, label: string) {
     return (
       <label className="check">
@@ -55,12 +77,7 @@ export function SettingsPanel({
             max="30"
             step="0.1"
             value={settings.interval}
-            onChange={(event) =>
-              set(
-                "interval",
-                Math.min(30, Math.max(1, event.target.valueAsNumber || 8)),
-              )
-            }
+            onChange={(event) => setInterval(event.target.valueAsNumber)}
           />
         </label>
         <label>
@@ -97,17 +114,19 @@ export function SettingsPanel({
           />
         </label>
         <label>
-          Momento do áudio
-          <select
+          Aviso antes da troca (0–{settings.interval} s)
+          <input
+            type="number"
+            min="0"
+            max={settings.interval}
+            step="0.1"
             value={settings.audioTiming}
-            onChange={(event) =>
-              set("audioTiming", Number(event.target.value) as 0 | 1 | 2)
-            }
-          >
-            <option value="0">No momento da troca</option>
-            <option value="1">1 segundo antes</option>
-            <option value="2">2 segundos antes</option>
-          </select>
+            onChange={(event) => setAudioTiming(event.target.valueAsNumber)}
+          />
+          <span className="hint">
+            Use 0 para tocar exatamente na troca. Aceita valores como 1,5 ou 2,7
+            segundos.
+          </span>
         </label>
         <fieldset>
           <legend>Áudios personalizados</legend>
@@ -142,9 +161,9 @@ export function SettingsPanel({
           onChange={(value) => set("hotkeys", value)}
         />
         <p className="hint">
-          Arraste a barra superior para mover a janela. Com “ignorar cliques”,
-          use F10 para recuperar a interação. Use F11 para ocultar ou reabrir o
-          overlay.
+          Arraste a barra superior para mover a janela. No modo compacto, a
+          engrenagem continua visível. Com “ignorar cliques”, use F10 para
+          recuperar a interação. Use F11 para ocultar ou reabrir o overlay.
         </p>
       </div>
     </div>
