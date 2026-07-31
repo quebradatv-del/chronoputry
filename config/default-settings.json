@@ -1,9 +1,9 @@
 {
-  "interval": 6,
-  "volume": 0.8,
+  "interval": 8,
+  "volume": 0.6,
   "opacity": 0.92,
   "scale": 1,
-  "audioTiming": 0,
+  "audioTiming": 2,
   "hotkeys": {
     "toggle": "F6",
     "sync": "F7",
