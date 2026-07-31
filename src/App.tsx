@@ -11,7 +11,12 @@ import { useAccurateTimer } from "./hooks/useAccurateTimer";
 import { useAudioCue } from "./hooks/useAudioCue";
 import { useSettings } from "./hooks/useSettings";
 import { useWindowGeometry } from "./hooks/useWindowGeometry";
-import { moveDirection } from "./services/directionService";
+import {
+  followingImpactIndex,
+  lastImpactIndexForUpcoming,
+  moveDirection,
+  upcomingImpactIndex,
+} from "./services/directionService";
 import { registerHotkeys } from "./services/hotkeyService";
 import { shouldPlayPreCue } from "./services/timerState";
 import { directions, type FrontendHotkeyAction } from "./types";
@@ -28,9 +33,9 @@ export default function App() {
   const { play, audioMessage } = useAudioCue(settings);
 
   const handleElapsed = useCallback(
-    (_elapsedCycles: number, nextDirectionIndex: number) => {
-      // Após suspensão, só o estágio atual é anunciado uma vez; não há rajada de áudios.
-      if (settings.audioTiming === 0) void play(nextDirectionIndex);
+    (_elapsedCycles: number, impactDirectionIndex: number) => {
+      // No instante da batida, anuncia a direção que acabou de atingir o totem.
+      if (settings.audioTiming === 0) void play(impactDirectionIndex);
     },
     [play, settings.audioTiming],
   );
@@ -97,7 +102,7 @@ export default function App() {
 
   useEffect(() => {
     if (shouldPlayPreCue(cycle, settings.audioTiming)) {
-      void play(moveDirection(cycle.directionIndex, 1));
+      void play(upcomingImpactIndex(cycle.directionIndex));
       markAudioPlayed();
     }
   }, [cycle, markAudioPlayed, play, settings.audioTiming]);
@@ -190,21 +195,22 @@ export default function App() {
     };
   }, [settings.hotkeys]);
 
-  const currentDirection = directions[cycle.directionIndex];
-  const nextDirection = directions[moveDirection(cycle.directionIndex, 1)];
+  const targetDirectionIndex = upcomingImpactIndex(cycle.directionIndex);
+  const targetDirection = directions[targetDirectionIndex];
+  const followingDirection = directions[followingImpactIndex(cycle.directionIndex)];
 
   return (
     <Overlay locked={settings.lockPosition} compact={settings.compact}>
       <div className={`${cycle.status} content ${syncFlash ? "synced" : ""}`}>
         <DirectionDisplay
-          index={cycle.directionIndex}
+          index={targetDirectionIndex}
           showLabel={settings.showDirection}
         />
         {settings.showCountdown && <Countdown remaining={cycle.remaining} />}
         {settings.showNext && (
           <div className="next">
-            Próxima: <strong>{nextDirection.label}</strong>{" "}
-            {nextDirection.arrow}
+            Depois: <strong>{followingDirection.label}</strong>{" "}
+            {followingDirection.arrow}
           </div>
         )}
         <div className="state" aria-live="polite">
@@ -222,11 +228,14 @@ export default function App() {
         />
         <select
           className="manual"
-          aria-label="Direção atual"
-          value={currentDirection.id}
-          onChange={(event) =>
-            reset(directions.findIndex(({ id }) => id === event.target.value))
-          }
+          aria-label="Próximo impacto"
+          value={targetDirection.id}
+          onChange={(event) => {
+            const selectedIndex = directions.findIndex(
+              ({ id }) => id === event.target.value,
+            );
+            reset(lastImpactIndexForUpcoming(selectedIndex));
+          }}
         >
           {directions.map((direction) => (
             <option key={direction.id} value={direction.id}>
